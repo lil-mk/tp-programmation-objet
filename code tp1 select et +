@@ -1,0 +1,108 @@
+import java.sql.*;
+import java.util.Scanner;
+
+public class Select {
+
+    public static void main(String[] args) {
+        try {
+            String strClassName = "com.mysql.jdbc.Driver";
+            String dbName = "tp";
+            String login = "root";
+            String motdepasse = "";
+            String strUrl = "jdbc:mysql://localhost/" + dbName;
+
+            Class.forName(strClassName);
+            Connection conn = DriverManager.getConnection(strUrl, login, motdepasse);
+
+            Scanner scanner = new Scanner(System.in);
+            boolean continuer = true;
+
+            while (continuer) {
+                System.out.println("\nMENU :");
+                System.out.println("1. Afficher les utilisateurs");
+                System.out.println("2. Modifier un statut");
+                System.out.println("3. Supprimer un utilisateur");
+                System.out.println("4. Quitter");
+                System.out.print("Choisissez une option : ");
+
+                int choix = scanner.nextInt();
+                scanner.nextLine(); // Consommer la ligne restante
+
+                switch (choix) {
+                    case 1:
+                        afficherUtilisateurs(conn);
+                        break;
+                    case 2:
+                        modifierStatut(conn, scanner);
+                        break;
+                    case 3:
+                        supprimerUtilisateur(conn, scanner);
+                        break;
+                    case 4:
+                        continuer = false;
+                        break;
+                    default:
+                        System.out.println("Option invalide !");
+                }
+            }
+
+            conn.close();
+            scanner.close();
+        } catch (ClassNotFoundException e) {
+            System.err.println("Driver non chargé !");
+            e.printStackTrace();
+        } catch (SQLException e) {
+            System.err.println("Erreur SQL !");
+            e.printStackTrace();
+        }
+    }
+
+    public static void afficherUtilisateurs(Connection conn) throws SQLException {
+        Statement stUsers = conn.createStatement();
+        ResultSet rsUsers = stUsers.executeQuery("SELECT * FROM Acces");
+
+        while (rsUsers.next()) {
+            System.out.println("Id[" + rsUsers.getInt(1) + "] " +
+                    rsUsers.getString(2) + " [" +
+                    rsUsers.getString("statut") + "] " +
+                    rsUsers.getInt("age"));
+        }
+    }
+
+    public static void modifierStatut(Connection conn, Scanner scanner) throws SQLException {
+        System.out.print("Entrez l'ID de l'utilisateur dont vous voulez modifier le statut : ");
+        int idToUpdate = scanner.nextInt();
+        scanner.nextLine(); // Consommer la ligne restante
+
+        System.out.print("Entrez le nouveau statut : ");
+        String newStatus = scanner.nextLine();
+
+        String updateQuery = "UPDATE Acces SET statut = ? WHERE id = ?";
+        PreparedStatement pstmt = conn.prepareStatement(updateQuery);
+        pstmt.setString(1, newStatus);
+        pstmt.setInt(2, idToUpdate);
+
+        int rowsAffected = pstmt.executeUpdate();
+        if (rowsAffected > 0) {
+            System.out.println("Le statut de l'utilisateur avec l'ID " + idToUpdate + " a été mis à jour.");
+        } else {
+            System.out.println("Aucun utilisateur trouvé avec l'ID " + idToUpdate);
+        }
+    }
+
+    public static void supprimerUtilisateur(Connection conn, Scanner scanner) throws SQLException {
+        System.out.print("Entrez l'ID de l'utilisateur à supprimer : ");
+        int idToDelete = scanner.nextInt();
+
+        String deleteQuery = "DELETE FROM Acces WHERE id = ?";
+        PreparedStatement pstmt = conn.prepareStatement(deleteQuery);
+        pstmt.setInt(1, idToDelete);
+
+        int rowsAffected = pstmt.executeUpdate();
+        if (rowsAffected > 0) {
+            System.out.println("L'utilisateur avec l'ID " + idToDelete + " a été supprimé.");
+        } else {
+            System.out.println("Aucun utilisateur trouvé avec l'ID " + idToDelete);
+        }
+    }
+}
